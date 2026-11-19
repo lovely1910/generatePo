@@ -93,7 +93,7 @@ return [
     ],
 
     // TEMPLATE KEEMPAT
-        'template_IUK_TigaRoda.docx' => [
+        'template_IUK_TigaRoda_fixed.docx' => [
         'label' => 'PO IUK Tiga Roda',
         'description' => 'Template Purchase Order standar.',
         'fields' => [

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 session_start();
@@ -120,6 +121,7 @@ function terbilang(int $n): string
         [1000000, 'Juta'],
         [1000, 'Ribu']
     ] as [$value, $label]) {
+
         if ($n >= $value) {
             $q = intdiv($n, $value);
             $r = $n % $value;
@@ -400,8 +402,6 @@ foreach ($fields as $fieldName => $field) {
             : rupiah((int) $value);
     }
 
-    // Nama field otomatis menjadi placeholder.
-    // Contoh: kapal menjadi ${kapal}.
     $values[$fieldName] = (string) $value;
 }
 
@@ -411,19 +411,16 @@ foreach ($fields as $fieldName => $field) {
 
 if ($hasCalculation) {
 
-    $values['quantity']   = rupiah($quantity);
-    $values['harga']      = rupiah($harga);
-    $values['subtotal']   = rupiah($total);
+    $values['quantity']    = rupiah($quantity);
+    $values['harga']       = rupiah($harga);
+    $values['subtotal']    = rupiah($total);
     $values['grand_total'] = rupiah($total);
-    $values['terbilang']  = terbilang($total) . ' Rupiah';
+    $values['terbilang']   = terbilang($total) . ' Rupiah';
 }
 
 // ==================================================
 // 12. MAPPING PLACEHOLDER DARI CONFIG
 // ==================================================
-
-// Format config:
-// 'nama_placeholder' => 'nama_field_form'
 
 $placeholders = $config['placeholders'] ?? [];
 
@@ -477,14 +474,43 @@ register_shutdown_function(
 // 14. MENYIAPKAN NAMA FILE
 // ==================================================
 
-$safePo = preg_replace(
-    '/[^A-Za-z0-9_-]+/',
+// Ambil label template.
+$templateLabel = trim((string) ($config['label'] ?? ''));
+
+// Hilangkan awalan PO agar tidak dobel.
+$templateLabel = preg_replace(
+    '/^PO\s+/i',
+    '',
+    $templateLabel
+);
+
+// Ambil nama kapal.
+$namaKapal = trim((string) ($formData['kapal'] ?? ''));
+
+// Susun nama file sesuai format kantor.
+$rawFileName = 'PO '
+    . $poNo
+    . ' '
+    . $templateLabel
+    . ' ('
+    . $namaKapal
+    . ')';
+
+// Hilangkan karakter yang tidak diperbolehkan dalam nama file.
+$safeFileName = preg_replace(
+    '/[<>:"\/\\\\|?*\x00-\x1F]/u',
     '_',
-    $poNo
+    $rawFileName
 ) ?: 'PO';
 
-$docxName = 'PO_' . $safePo . '.docx';
-$pdfName  = 'PO_' . $safePo . '.pdf';
+// Rapikan spasi dan karakter di akhir nama.
+$safeFileName = trim(
+    preg_replace('/\s+/u', ' ', $safeFileName),
+    " .\t\n\r\0\x0B"
+);
+
+$docxName = $safeFileName . '.docx';
+$pdfName  = $safeFileName . '.pdf';
 
 $docxPath = $tmp . DIRECTORY_SEPARATOR . $docxName;
 $pdfPath  = $tmp . DIRECTORY_SEPARATOR . $pdfName;
@@ -543,7 +569,6 @@ foreach ($xmlFiles as $xmlFile) {
     if ($updatedXml !== $xml) {
 
         if (!$docZip->addFromString($xmlFile, $updatedXml)) {
-
             $docZip->close();
 
             failPage(
@@ -605,53 +630,55 @@ if (!$converted) {
     );
 }
 
+// ==================================================
+// 17. DOWNLOAD WORD DAN PDF DALAM SATU FILE ZIP
+// ==================================================
 
- // ==================================================
- // 17. DOWNLOAD WORD DAN PDF SECARA TERPISAH
- // ==================================================
+$zipName = $safeFileName . '.zip';
+$zipPath = $tmp . DIRECTORY_SEPARATOR . $zipName;
 
-if (ob_get_level() > 0) {
+$downloadZip = new ZipArchive();
+
+$result = $downloadZip->open(
+    $zipPath,
+    ZipArchive::CREATE | ZipArchive::OVERWRITE
+);
+
+if ($result !== true) {
+    failPage('Tidak dapat membuat file ZIP.', 500);
+}
+
+// Masukkan file Word dan PDF ke dalam ZIP.
+if (
+    !$downloadZip->addFile($docxPath, $docxName)
+    || !$downloadZip->addFile($pdfPath, $pdfName)
+) {
+    $downloadZip->close();
+
+    failPage('Gagal memasukkan dokumen ke dalam ZIP.', 500);
+}
+
+if (!$downloadZip->close()) {
+    failPage('Gagal menyelesaikan file ZIP.', 500);
+}
+
+// Bersihkan output buffer agar ZIP tidak rusak.
+while (ob_get_level() > 0) {
     ob_end_clean();
 }
 
-// Tampilkan halaman dengan dua link download.
-$wordUrl = 'data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,'
-    . base64_encode(file_get_contents($docxPath));
+if (!is_file($zipPath)) {
+    failPage('File ZIP tidak berhasil dibuat.', 500);
+}
 
-$pdfUrl = 'data:application/pdf;base64,'
-    . base64_encode(file_get_contents($pdfPath));
+// Kirim ZIP untuk diunduh.
+header('Content-Type: application/zip');
+header(
+    'Content-Disposition: attachment; filename="' . $zipName . '"'
+);
+header('Content-Length: ' . filesize($zipPath));
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Pragma: no-cache');
 
-echo '<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<title>Download PO</title>
-</head>
-<body style="font-family:Arial;text-align:center;padding:40px">
-
-<h2>PO Berhasil Dibuat!</h2>
-<p>Silakan download dokumen:</p>
-
-<a id="word" download="' . htmlspecialchars($docxName, ENT_QUOTES, 'UTF-8') . '"
-href="' . $wordUrl . '">
-Download Word
-</a>
-
-<br><br>
-
-<a id="pdf" download="' . htmlspecialchars($pdfName, ENT_QUOTES, 'UTF-8') . '"
-href="' . $pdfUrl . '">
-Download PDF
-</a>
-
-</body>
-</html>';
-
-echo '<script>
-document.getElementById("word").click();
-setTimeout(function() {
-    document.getElementById("pdf").click();
-}, 1500);
-</script>';
-
+readfile($zipPath);
 exit;

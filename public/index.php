@@ -290,7 +290,6 @@ lalu unduh dokumen Word dan PDF.
 
 </div>
 
-
 <!-- ================================== -->
 <!-- DATA UMUM PO -->
 <!-- ================================== -->
@@ -306,7 +305,6 @@ lalu unduh dokumen Word dan PDF.
             id="tanggal"
             type="date"
             name="tanggal"
-            value="<?= date('Y-m-d') ?>"
             required
         >
     </div>
@@ -317,7 +315,6 @@ lalu unduh dokumen Word dan PDF.
         <input
             id="nomor_po"
             name="nomor_po"
-            value="59"
             maxlength="40"
             required
         >
@@ -343,7 +340,6 @@ lalu unduh dokumen Word dan PDF.
             placeholder="Otomatis dari tanggal"
         >
     </div>
-
 
     <!-- ================================== -->
     <!-- FIELD DINAMIS TEMPLATE -->
@@ -371,16 +367,6 @@ lalu unduh dokumen Word dan PDF.
                     if (!in_array($fieldType, ['text', 'number'], true)) {
                         $fieldType = 'text';
                     }
-
-                    $defaultValue = '';
-
-                    if ($name === 'quantity') {
-                        $defaultValue = '5120';
-                    } elseif ($name === 'harga') {
-                        $defaultValue = '43743';
-                    } elseif ($name === 'kapal') {
-                        $defaultValue = 'KM. STB 25';
-                    }
                     ?>
 
                     <div>
@@ -395,7 +381,6 @@ lalu unduh dokumen Word dan PDF.
                             type="<?= $fieldType ?>"
                             id="<?= htmlspecialchars('field_' . $file . '_' . $name, ENT_QUOTES, 'UTF-8') ?>"
                             name="<?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>"
-                            value="<?= htmlspecialchars($defaultValue, ENT_QUOTES, 'UTF-8') ?>"
                             <?= !empty($field['required']) ? 'required' : '' ?>
                             <?= $fieldType === 'number' ? 'min="0" step="1"' : '' ?>
                             disabled
@@ -412,7 +397,6 @@ lalu unduh dokumen Word dan PDF.
     <?php endforeach; ?>
 
 </div>
-
 
 <!-- ================================== -->
 <!-- TOTAL DAN TERBILANG -->
@@ -440,7 +424,6 @@ lalu unduh dokumen Word dan PDF.
 
 </section>
 
-
 <!-- ================================== -->
 <!-- TOMBOL GENERATE -->
 <!-- ================================== -->
@@ -450,7 +433,6 @@ lalu unduh dokumen Word dan PDF.
 </button>
 
 </form>
-
 
 <div class="note">
 
@@ -462,7 +444,6 @@ yang diganti sesuai template yang dipilih.
 </div>
 
 </main>
-
 
 <script>
 
@@ -484,7 +465,6 @@ const roman = [
     'I','II','III','IV','V','VI',
     'VII','VIII','IX','X','XI','XII'
 ];
-
 
 // ========================================
 // PILIH TEMPLATE
@@ -523,7 +503,6 @@ function changeTemplate() {
 }
 
 templateSelect.addEventListener('change', changeTemplate);
-
 
 // ========================================
 // TERBILANG
@@ -614,7 +593,6 @@ function terbilang(n) {
 
 }
 
-
 // ========================================
 // HITUNG SUBTOTAL
 // ========================================
@@ -683,7 +661,6 @@ function updateTotal() {
 
 }
 
-
 // ========================================
 // EVENT INPUT QUANTITY DAN HARGA
 // ========================================
@@ -695,7 +672,6 @@ document.querySelectorAll(
     input.addEventListener('input', updateTotal);
 
 });
-
 
 // ========================================
 // TANGGAL OTOMATIS
@@ -724,7 +700,6 @@ document.getElementById('tanggal').addEventListener('change', e => {
     }
 
 });
-
 
 // ========================================
 // VALIDASI FORM
@@ -789,7 +764,6 @@ document.getElementById('poForm').addEventListener('submit', e => {
     }
 
 });
-
 
 // ========================================
 // INITIALIZE
